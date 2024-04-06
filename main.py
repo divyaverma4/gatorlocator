@@ -1,47 +1,24 @@
-# This is a sample Python script.
+from user import UserProfile
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
-
-from user import User
-
-def preferenceCompatibility(user1, user2):
-    user1pref = user1.getPreference
-    user2pref = user2.getPreference
-    count = 0
-    match = False
-
-    for x in len(user1pref):
-        if user1pref[x] == user2pref[x]:
-            count+= 1
-
-    if count >= 3:
-        match = True
-
-    return match
-
-def interestCompatibility(user1, user2):
-    user1interest = user1.getInterest
-    user2interest = user2.getInterest
-    count = 0
-    match = False
-    sameinterests = []
-
-    for x in len(user1interest):
-        if user1interest[x] == user2interest[x]:
-            count+= 1
-            sameinterests.append(user1interest[x])
-
-    if len(sameinterests) >= 3:
-        match = True
-
-    if match:
-        return sameinterests
-    else:
-        return match
+# a function that counts similar preferences(personality, minimum 5 out of 10)
+def personality_similarity(user1, user2):
+    common_personality = sum(1 for a, b in zip(user1.personality_answers, user2.personality_answers) if a == b)
+    return common_personality
+    # for this function to work, we MUST have our answers for the 10 personality questions to be integers
+    # example: user1_answers = [1, 2, 1, 2, 1, 1, 2, 1, 2, 'yes']
+    # user2_answers = [2, 1, 2, 1, 2, 2, 1, 2, 1, 'no']
 
 
-if __name__ == '__main__':
+# a second functions that seeks an overlap between interests using sets()
+def interests_similarity(user1, user2):
+    common_interests = set(user1.interest_answers) & set(user2.interest_answers)
+    return common_interests
 
+# testing:
+user1 = UserProfile("Anna", 19, "Female", "Statistics", [1,2,2,2,1,1,1,1,2,"yes"], ["raves", "anime", "books", "gym", "plants"] )
+user1.save_to_database()
+user2 = UserProfile("Pao", 19, "Female", "CS", [1,2,1,2,1,1,1,1,2,"no"], ["Yoga", "anime", "books", "Vinyls", "plants"] )
+user2.save_to_database()
 
-
+print(personality_similarity(user1, user2))
+print(interests_similarity(user1, user2))
