@@ -1,89 +1,101 @@
 import tkinter as tk
+from pymongo import MongoClient
 from user import UserProfile
-class DatingAppGUI:
+from matching import interests_similarity
+
+
+class GatorLocatorApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Dating App")
+        self.root.title("GatorLocator")
 
-        # Define colors
-        background_color = "#f0f0f0"
-        label_color = "#333333"
-        button_color = "#4CAF50"
+        # Create GUI elements
+        self.create_widgets()
 
-        # Create and pack widgets with color settings
-        self.label_name = tk.Label(root, text="Name:", fg=label_color, bg=background_color)
-        self.label_name.pack()
+    def create_widgets(self):
+        # Name entry
+        self.label_name = tk.Label(self.root, text="Name:")
+        self.label_name.grid(row=0, column=0, padx=10, pady=5)
+        self.entry_name = tk.Entry(self.root)
+        self.entry_name.grid(row=0, column=1, padx=10, pady=5)
 
-        self.entry_name = tk.Entry(root)
-        self.entry_name.pack()
+        # Age entry
+        self.label_age = tk.Label(self.root, text="Age:")
+        self.label_age.grid(row=1, column=0, padx=10, pady=5)
+        self.entry_age = tk.Entry(self.root)
+        self.entry_age.grid(row=1, column=1, padx=10, pady=5)
 
-        self.label_age = tk.Label(root, text="Age:", fg=label_color, bg=background_color)
-        self.label_age.pack()
+        # Gender entry
+        self.label_gender = tk.Label(self.root, text="Gender:")
+        self.label_gender.grid(row=2, column=0, padx=10, pady=5)
+        self.entry_gender = tk.Entry(self.root)
+        self.entry_gender.grid(row=2, column=1, padx=10, pady=5)
 
-        self.entry_age = tk.Entry(root)
-        self.entry_age.pack()
+        # Major entry
+        self.label_major = tk.Label(self.root, text="Major:")
+        self.label_major.grid(row=3, column=0, padx=10, pady=5)
+        self.entry_major = tk.Entry(self.root)
+        self.entry_major.grid(row=3, column=1, padx=10, pady=5)
 
-        self.label_interests = tk.Label(root, text="Interests:", fg=label_color, bg=background_color)
-        self.label_interests.pack()
+        # Interests entry
+        self.label_interests = tk.Label(self.root, text="Interests (comma-separated):")
+        self.label_interests.grid(row=4, column=0, padx=10, pady=5)
+        self.entry_interests = tk.Entry(self.root)
+        self.entry_interests.grid(row=4, column=1, padx=10, pady=5)
 
-        self.listbox_interests = tk.Listbox(root, selectmode=tk.MULTIPLE)
-        self.listbox_interests.insert(1, "Hiking")
-        self.listbox_interests.insert(2, "Reading")
-        self.listbox_interests.insert(3, "Cooking")
-        self.listbox_interests.pack()
+        # Submit button
+        self.submit_button = tk.Button(self.root, text="Submit", command=self.submit_profile)
+        self.submit_button.grid(row=5, column=0, columnspan=2, padx=10, pady=10)
 
-        self.button_submit = tk.Button(root, text="Submit", command=self.match_profiles, fg=label_color, bg=button_color)
-        self.button_submit.pack()
+        # Matching results display
+        self.matching_results_text = tk.Text(self.root, height=10, width=50)
+        self.matching_results_text.grid(row=6, column=0, columnspan=2, padx=10, pady=10)
 
-        # Matched profiles display
-        self.matched_profiles_label = tk.Label(root, text="Matched Profiles:", fg=label_color, bg=background_color)
-        self.matched_profiles_label.pack()
-
-        self.matched_profiles_text = tk.Text(root, height=10, width=50)
-        self.matched_profiles_text.pack()
-
-    def match_profiles(self):
-        # Dummy logic for matching profiles (replace with actual matchmaking algorithm)
+    def submit_profile(self):
+        # Extract user input
         name = self.entry_name.get()
-        age = self.entry_age.get()
-        selected_interests = [self.listbox_interests.get(idx) for idx in self.listbox_interests.curselection()]
+        age = int(self.entry_age.get())
+        gender = self.entry_gender.get()
+        major = self.entry_major.get()
+        interests = self.entry_interests.get().split(",")
 
-        user1 = UserProfile("Alice", 25, "Hiking")
-        user2 = UserProfile("Bob", 20, "Cooking")
-        user3 = UserProfile("Jane", 18, "Reading")
+        # Create a UserProfile instance
+        user_profile = UserProfile(name, age, gender, major, interests)
 
-        user_arr = [user1, user2, user3]
+        # Save to MongoDB
+        user_profile.save_to_database()
 
-        nameOfMatch = ""
-        ageOfMatch = 0
-        matched_interest = ""
+        # Display matching results
+        self.display_matching_results(user_profile)
 
-        for item in user_arr:
-            for interest in selected_interests:
-                if interest == item.interest_answers:
-                    matched_interest = interest
-                    ageOfMatch = item.age
-                    nameOfMatch = item.name
+    def display_matching_results(self, user_profile):       # wont display matching results due to not having more variables (userprofile asks for more) and also because database is empty - so it wont match.
+        # Connect to MongoDB and get user profiles collection
+        client = MongoClient(
+            'mongodb+srv://sailordawgggg:12345@cluster0.tjofgji.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
+        db = client['gatorlocator_database']
+        collection = db['user_profiles']
 
+        # Retrieve all user profiles from the database
+        all_profiles = collection.find()
 
-        matched_profiles = [
-            {"name": nameOfMatch, "age": ageOfMatch, "interests": matched_interest},
-            {"name": name, "age": age, "interests": matched_interest}
-        ]
-
-        # Display matched profiles
-        self.matched_profiles_text.delete(1.0, tk.END)  # Clear previous content
-        for profile in matched_profiles:
-            self.matched_profiles_text.insert(tk.END, f"Name: {profile['name']}, Age: {profile['age']}, Similar Interest: {profile['interests']}\n")
-
-
+        # Perform matching and display results
+        self.matching_results_text.delete(1.0, tk.END)  # Clear previous content
+        for profile in all_profiles:
+            other_profile = UserProfile(profile['name'], profile['age'], profile['gender'], profile['major'], None,
+                                        profile['interests'])
+            if user_profile != other_profile:  # Exclude the user's own profile from matching
+                common_interests = interests_similarity(user_profile, other_profile)
+                self.matching_results_text.insert(tk.END, f"Name: {other_profile.name}\n")
+                self.matching_results_text.insert(tk.END, f"Common Interests: {', '.join(common_interests)}\n\n")
 
 
 # Create the main application window
-root = tk.Tk()
-
-# Instantiate the DatingAppGUI class
-app = DatingAppGUI(root)
-
-# Run the Tkinter event loop
-root.mainloop()
+try:
+    root = tk.Tk()
+except Exception as e:
+    print("An error occurred while creating the Tkinter window:", e)
+else:
+    # Instantiate the GatorLocatorApp class
+    app = GatorLocatorApp(root)
+    # Run the Tkinter event loop
+    root.mainloop()
